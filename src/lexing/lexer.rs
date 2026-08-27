@@ -22,12 +22,8 @@ impl<'a> Lexer<'a> {
     pub fn get_tokens(&mut self) -> Result<Vec<Token>, Error> {
         let mut tokens = Vec::new();
 
-        loop {
-            if let Some(token) = self.next_token() {
-                tokens.push(token?);
-            } else {
-                break;
-            }
+        while let Some(token) = self.next_token() {
+            tokens.push(token?);
         }
 
         Ok(tokens)
@@ -38,8 +34,9 @@ impl<'a> Lexer<'a> {
 
         let (line, col) = (self.line, self.col);
 
-        let kind = match self.peek() {
-            Some(c) => match c {
+        let kind = {
+            let c = self.peek()?;
+            match c {
                 c if c.is_alphabetic() => self.read_ident_or_keyword(),
                 '{' => {
                     self.advance();
@@ -56,8 +53,7 @@ impl<'a> Lexer<'a> {
                 _ => {
                     unreachable!();
                 }
-            },
-            None => return None,
+            }
         };
 
         Some(Ok(Token::new(kind, line, col)))
