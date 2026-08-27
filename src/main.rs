@@ -1,5 +1,5 @@
-use ria::analyze::Parser;
 use ria::lexing::Lexer;
+use ria::parser::Parser;
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();

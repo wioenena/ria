@@ -1,12 +1,10 @@
 use std::str::FromStr;
 
+use crate::ast::{Decl, EnumDecl, TypeDecl, TypeDeclField};
 use crate::lexing::{Token, TokenKind, TokenKindTag};
 use crate::types::Type;
 
-use super::decl::Decl;
-use super::enum_decl::EnumDecl;
 use super::error::Error;
-use super::type_decl::{TypeDecl, TypeDeclField};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -21,18 +19,13 @@ impl Parser {
     pub fn parse(&mut self) -> Result<Vec<Decl>, Error> {
         let mut decls = Vec::new();
 
-        loop {
-            match self.peek() {
-                Some(kind) => {
-                    if kind == &TokenKind::TypeDecl {
-                        decls.push(Decl::Type(self.parse_type_decl()?));
-                    } else if kind == &TokenKind::EnumDecl {
-                        decls.push(Decl::Enum(self.parse_enum_decl()?));
-                    } else {
-                        unreachable!()
-                    }
-                }
-                None => break,
+        while let Some(kind) = self.peek() {
+            if kind == &TokenKind::TypeDecl {
+                decls.push(Decl::Type(self.parse_type_decl()?));
+            } else if kind == &TokenKind::EnumDecl {
+                decls.push(Decl::Enum(self.parse_enum_decl()?));
+            } else {
+                unreachable!()
             }
         }
 
