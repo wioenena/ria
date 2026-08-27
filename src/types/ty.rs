@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use self::Type::U8;
-
 use super::Error;
 
 #[derive(Debug, PartialEq)]

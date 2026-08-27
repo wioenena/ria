@@ -32,7 +32,7 @@ impl Parser {
                         unreachable!()
                     }
                 }
-                None => return Ok(decls),
+                None => break,
             }
         }
 
@@ -133,10 +133,6 @@ impl Parser {
 
     fn peek(&self) -> Option<&TokenKind> {
         self.tokens.get(self.pos).map(Token::kind)
-    }
-
-    fn peek_at(&self, offset: usize) -> Option<&TokenKind> {
-        self.tokens.get(self.pos + offset).map(Token::kind)
     }
 
     fn eat(&mut self, expected: TokenKindTag) -> Result<&Token, Error> {
