@@ -1,0 +1,10 @@
+type User {
+    name string
+    age u8
+    lifeState HumanLifeState
+}
+
+enum HumanLifeState {
+    Alive
+    Dead
+}
