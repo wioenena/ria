@@ -90,7 +90,6 @@ impl Parser {
         self.eat(TokenKindTag::LBrace)?;
         let mut values = Vec::new();
 
-        dbg!(self.peek());
         loop {
             let value = self.take_next_ident()?;
             values.push(value);
@@ -147,6 +146,8 @@ impl Parser {
             Some(other) => Err(Error::UnexpectedToken {
                 expected,
                 found: other.kind().clone(),
+                line: other.line(),
+                col: other.col(),
             }),
             None => Err(Error::Eof),
         }
