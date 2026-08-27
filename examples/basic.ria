@@ -1,10 +1,10 @@
 type User {
-    name string
+    name string,
     age u8
-    lifeState HumanLifeState
+    # lifeState HumanLifeState
 }
 
 enum HumanLifeState {
-    Alive
+    Alive,
     Dead
 }

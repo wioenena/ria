@@ -1,12 +1,14 @@
-use crate::lexing::TokenKind;
+use crate::lexing::{TokenKind, TokenKindTag};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Unexpected token: {found}, expected: {expected}")]
+    #[error("Unexpected token: {found:?}, expected: {expected:?}")]
     UnexpectedToken {
-        expected: TokenKind,
+        expected: TokenKindTag,
         found: TokenKind,
     },
     #[error("Unexpected EOF")]
     Eof,
+    #[error(transparent)]
+    Type(#[from] crate::types::Error),
 }

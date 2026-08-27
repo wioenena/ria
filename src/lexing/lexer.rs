@@ -49,8 +49,11 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     TokenKind::RBrace
                 }
+                ',' => {
+                    self.advance();
+                    TokenKind::Comma
+                }
                 _ => {
-                    dbg!(c);
                     unreachable!();
                 }
             },
@@ -70,7 +73,8 @@ impl<'a> Lexer<'a> {
         let text = &self.source[start..self.pos];
 
         match text {
-            "enum" => TokenKind::Enum,
+            "type" => TokenKind::TypeDecl,
+            "enum" => TokenKind::EnumDecl,
             _ => TokenKind::Ident(text.to_string()),
         }
     }
@@ -94,8 +98,74 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip_whitespace_and_comments(&mut self) {
-        while matches!(self.peek(), Some(c) if c.is_whitespace()) {
-            self.advance();
+        loop {
+            match self.peek() {
+                Some(c) if c.is_ascii_whitespace() => {
+                    self.advance();
+                }
+                Some('#') => {
+                    while self.peek() != Some('\n') {
+                        self.advance();
+                    }
+                }
+                _ => break,
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    static SOURCE: &str = "
+        type User {
+            name string,
+            age u8,
+            lifeState HumanLifeState
+        }
+
+        # this is comment.
+
+        enum HumanLifeState {
+            Alive,
+            Dead
+        }
+    ";
+
+    #[test]
+    fn test_type_and_enum_decl() {
+        let mut lexer = Lexer::new(SOURCE);
+        let tokens = lexer
+            .get_tokens()
+            .unwrap()
+            .iter()
+            .clone()
+            .map(|t| t.kind().clone())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            tokens,
+            vec![
+                TokenKind::TypeDecl,
+                TokenKind::Ident("User".to_owned()),
+                TokenKind::LBrace,
+                TokenKind::Ident("name".to_owned()),
+                TokenKind::Ident("string".to_owned()),
+                TokenKind::Comma,
+                TokenKind::Ident("age".to_owned()),
+                TokenKind::Ident("u8".to_owned()),
+                TokenKind::Comma,
+                TokenKind::Ident("lifeState".to_owned()),
+                TokenKind::Ident("HumanLifeState".to_owned()),
+                TokenKind::RBrace,
+                TokenKind::EnumDecl,
+                TokenKind::Ident("HumanLifeState".to_owned()),
+                TokenKind::LBrace,
+                TokenKind::Ident("Alive".to_owned()),
+                TokenKind::Comma,
+                TokenKind::Ident("Dead".to_owned()),
+                TokenKind::RBrace
+            ]
+        );
     }
 }
