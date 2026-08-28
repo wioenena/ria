@@ -1,4 +1,4 @@
-use crate::types::Type::{self, I128};
+use crate::types::Type;
 
 use super::codegen_target::CodegenTarget;
 

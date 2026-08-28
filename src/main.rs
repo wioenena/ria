@@ -16,7 +16,9 @@ fn main() {
         let resolver = Resolver::new(&decls);
         resolver.resolve().unwrap();
         let codegen = CodeGenerator::<Typescript>::new();
-        println!("{}", codegen.generate(&decls));
+        println!("Input: {content}");
+        println!();
+        println!("Output: {}", codegen.generate(&decls));
     } else {
         eprintln!("use ria <file.ria>")
     }
