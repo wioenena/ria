@@ -87,7 +87,8 @@ the resulting AST for inspection — there is no generated output yet.
 
 - [x] Lexer
 - [x] Parser and AST
-- [ ] Type resolution (referencing other declared types/enums as field types)
+- [x] Type resolution (referencing other declared types/enums as field types)
+- [ ] Custom output with attributes
 - [ ] Semantic analysis / validation
 - [ ] Code generation
   - [ ] TypeScript
@@ -97,4 +98,4 @@ the resulting AST for inspection — there is no generated output yet.
 
 ## License
 
-No license has been chosen yet.
+MIT — see [LICENSE.txt](LICENSE.txt) for the full text.
