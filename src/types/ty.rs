@@ -1,8 +1,4 @@
-use std::str::FromStr;
-
-use super::Error;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Type {
     I8,
     U8,
@@ -18,13 +14,12 @@ pub enum Type {
     F64,
     Bool,
     String,
+    Custom(String),
 }
 
-impl FromStr for Type {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
+impl From<&str> for Type {
+    fn from(value: &str) -> Self {
+        match value {
             "i8" => Self::I8,
             "u8" => Self::U8,
             "i16" => Self::I16,
@@ -39,7 +34,7 @@ impl FromStr for Type {
             "f64" => Self::F64,
             "bool" => Self::Bool,
             "string" => Self::String,
-            _ => return Err(Error::InvalidType(s.to_owned())),
-        })
+            other => Self::Custom(other.to_owned()),
+        }
     }
 }

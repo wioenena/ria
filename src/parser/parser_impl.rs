@@ -1,8 +1,5 @@
-use std::str::FromStr;
-
 use crate::ast::{Decl, EnumDecl, TypeDecl, TypeDeclField};
 use crate::lexing::{Token, TokenKind, TokenKindTag};
-use crate::types::Type;
 
 use super::error::Error;
 
@@ -37,12 +34,15 @@ impl Parser {
         let name = self.take_next_ident()?;
         self.eat(TokenKindTag::LBrace)?;
 
+        if self.peek_blank_def() {
+            self.eat(TokenKindTag::RBrace)?;
+            return Ok(TypeDecl::new(name, Vec::new()));
+        }
+
         let fields = self.parse_type_decl_fields()?;
         self.eat(TokenKindTag::RBrace)?;
 
-        let type_decl = TypeDecl::new(name, fields);
-
-        Ok(type_decl)
+        Ok(TypeDecl::new(name, fields))
     }
 
     fn parse_type_decl_fields(&mut self) -> Result<Vec<TypeDeclField>, Error> {
@@ -52,26 +52,13 @@ impl Parser {
             let field_name = self.take_next_ident()?;
             let field_ty = self.take_next_ident()?;
 
-            fields.push(TypeDeclField::new(field_name, Type::from_str(&field_ty)?));
+            fields.push(TypeDeclField::new(field_name, field_ty.as_str().into()));
 
-            match self.peek() {
-                Some(kind) if kind.tag() == TokenKindTag::Comma => {
-                    self.advance();
-                    if let Some(next) = self.peek() {
-                        if next.tag() == TokenKindTag::Ident {
-                            continue;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        unreachable!();
-                    }
-                }
-                Some(_) => {
-                    break;
-                }
-                None => unreachable!(),
+            if matches!(self.peek(), Some(kind) if kind.tag() == TokenKindTag::RBrace) {
+                break;
             }
+
+            self.eat(TokenKindTag::Comma)?;
         }
 
         Ok(fields)
@@ -81,33 +68,32 @@ impl Parser {
         self.eat(TokenKindTag::EnumDecl)?;
         let name = self.take_next_ident()?;
         self.eat(TokenKindTag::LBrace)?;
+
+        if self.peek_blank_def() {
+            self.eat(TokenKindTag::RBrace)?;
+            return Ok(EnumDecl::new(name, Vec::new()));
+        }
+
         let mut values = Vec::new();
 
         loop {
             let value = self.take_next_ident()?;
             values.push(value);
 
-            match self.peek() {
-                Some(kind) if kind.tag() == TokenKindTag::Comma => {
-                    self.advance();
-                    if let Some(next) = self.peek() {
-                        if next.tag() == TokenKindTag::Ident {
-                            continue;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        unreachable!();
-                    }
-                }
-                Some(_) => break,
-                None => unreachable!(),
+            if matches!(self.peek(),Some(kind) if kind.tag() == TokenKindTag::RBrace) {
+                break;
             }
+
+            self.eat(TokenKindTag::Comma)?;
         }
 
         self.eat(TokenKindTag::RBrace)?;
 
         Ok(EnumDecl::new(name, values))
+    }
+
+    fn peek_blank_def(&self) -> bool {
+        matches!(self.peek(), Some(kind) if kind.tag() == TokenKindTag::RBrace)
     }
 
     fn take_next_ident(&mut self) -> Result<String, Error> {
@@ -145,45 +131,57 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::lexing::Lexer;
 
-    use super::*;
-    static SOURCE: &str = "
-        type User {
-            name string,
-            age u8,
-            # lifeState HumanLifeState
-        }
+    #[test]
+    fn test_valid_tokens() {
+        let source = "
+            type User {
+                name string,
+                age u8,
+                lifeState HumanLifeState
+            }
 
-        enum HumanLifeState {
-            Alive,
-            Dead
-        }
-    ";
+            enum HumanLifeState {
+                Alive,
+                Dead
+            }
+        ";
+
+        let tokens = Lexer::new(source).get_tokens().unwrap();
+        assert!(Parser::new(tokens).parse().is_ok());
+    }
 
     #[test]
-    fn test_parse_type_and_enum_decls() {
-        let mut lexer = Lexer::new(SOURCE);
-        let tokens = lexer.get_tokens().unwrap();
-        let mut parser = Parser::new(tokens);
-
-        let decls = parser.parse().unwrap();
-
+    fn test_invalid_tokens() {
+        let source = "
+            type User {
+                name String # need ','
+                age u8
+            }
+        ";
+        let tokens = Lexer::new(source).get_tokens().unwrap();
         assert_eq!(
-            decls,
-            vec![
-                Decl::Type(TypeDecl::new(
-                    "User".to_owned(),
-                    vec![
-                        TypeDeclField::new("name".to_owned(), Type::String),
-                        TypeDeclField::new("age".to_owned(), Type::U8)
-                    ]
-                )),
-                Decl::Enum(EnumDecl::new(
-                    "HumanLifeState".to_owned(),
-                    vec!["Alive".to_owned(), "Dead".to_owned()]
-                ))
-            ]
+            Parser::new(tokens).parse(),
+            Err(Error::UnexpectedToken {
+                expected: TokenKindTag::Comma,
+                found: TokenKind::Ident("age".to_owned()),
+                line: 4,
+                col: 17
+            })
         );
+    }
+
+    #[test]
+    fn test_blank_type_and_enum_def() {
+        let source = "
+            type User { }
+
+            enum State { }
+        ";
+
+        let tokens = Lexer::new(source).get_tokens().unwrap();
+        Parser::new(tokens).parse().unwrap();
     }
 }

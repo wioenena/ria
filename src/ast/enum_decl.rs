@@ -8,4 +8,12 @@ impl EnumDecl {
     pub fn new(name: String, values: Vec<String>) -> Self {
         Self { name, values }
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn values(&self) -> &[String] {
+        self.values.as_slice()
+    }
 }
