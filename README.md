@@ -19,7 +19,7 @@ enum HumanLifeState {
 
 > ⚠️ **Status: early development.** The lexer, parser, and AST are working.
 > Type-checking/resolution and code generation for target languages are not
-> implemented yet. See [Roadmap](#roadmap) below.
+> implemented yet.
 
 ## Why
 
