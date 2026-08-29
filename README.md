@@ -54,18 +54,6 @@ Supported field types today: `i8`, `u8`, `string`. Referencing another
 declared `type`/`enum` as a field's type, optional types, and collection
 types (arrays, maps, etc.) are planned but not implemented yet.
 
-## Project structure
-
-The project is organized as a small compiler pipeline:
-
-```
-src/
-├── lexing/   # source text -> tokens
-├── parser/   # tokens -> AST
-├── ast/      # AST node definitions (Decl, TypeDecl, EnumDecl, ...)
-└── types/    # the primitive type system
-```
-
 Each stage is intentionally isolated in its own module so new stages
 (semantic analysis, code generation) can be added without disturbing the
 existing ones.
@@ -83,19 +71,5 @@ cargo run -- examples/basic.ria
 Running the CLI on a `.ria` file currently lexes and parses it, then prints
 the resulting AST for inspection — there is no generated output yet.
 
-## Roadmap
-
-- [x] Lexer
-- [x] Parser and AST
-- [x] Type resolution (referencing other declared types/enums as field types)
-- [ ] Custom output with attributes
-- [ ] Semantic analysis / validation
-- [ ] Code generation
-  - [ ] TypeScript
-  - [ ] Go
-  - [ ] Rust
-- [ ] CLI ergonomics (output paths, target selection, etc.)
-
 ## License
-
 MIT — see [LICENSE.txt](LICENSE.txt) for the full text.
