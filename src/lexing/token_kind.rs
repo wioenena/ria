@@ -1,6 +1,11 @@
-#[derive(Debug, Clone, PartialEq)]
+use strum_macros::EnumDiscriminants;
+
+#[derive(Debug, Clone, PartialEq, EnumDiscriminants)]
+#[strum_discriminants(name(TokenKindTag))]
 pub enum TokenKind {
     Ident(String),
+    String(String),
+    Number(u32),
 
     // Decls
     EnumDecl,
@@ -8,33 +13,18 @@ pub enum TokenKind {
 
     // Symbols
     Comma,
+    LParen,
+    RParen,
     LBrace,
     RBrace,
-}
+    At,
+    Eq,
 
-#[derive(Debug, PartialEq)]
-pub enum TokenKindTag {
-    Ident,
-
-    // Decls
-    EnumDecl,
-    TypeDecl,
-
-    // Symbols
-    Comma,
-    LBrace,
-    RBrace,
+    Eof,
 }
 
 impl TokenKind {
-    pub const fn tag(&self) -> TokenKindTag {
-        match self {
-            TokenKind::Ident(_) => TokenKindTag::Ident,
-            TokenKind::EnumDecl => TokenKindTag::EnumDecl,
-            TokenKind::TypeDecl => TokenKindTag::TypeDecl,
-            TokenKind::Comma => TokenKindTag::Comma,
-            TokenKind::LBrace => TokenKindTag::LBrace,
-            TokenKind::RBrace => TokenKindTag::RBrace,
-        }
+    pub fn tag(&self) -> TokenKindTag {
+        TokenKindTag::from(self)
     }
 }

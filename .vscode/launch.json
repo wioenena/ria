@@ -5,8 +5,11 @@
             "name": "Debug ria",
             "type": "lldb",
             "program": "${workspaceFolder}/target/debug/ria.exe",
-            "args": ["${workspaceFolder}/examples/basic.ria"],
-            "request": "launch"
+            "args": ["${workspaceFolder}/examples/attributes.ria"],
+            "request": "launch",
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "rust: cargo build",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

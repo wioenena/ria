@@ -2,13 +2,20 @@ use crate::lexing::{TokenKind, TokenKindTag};
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum Error {
-    #[error("Unexpected token {found:?} at {line}:{col}, expected: {expected:?}")]
+    #[error("unexpected token {found:?} at line: {line}, column: {column}, expected: {expected:?}")]
     UnexpectedToken {
-        expected: TokenKindTag,
+        expected: Vec<TokenKindTag>,
         found: TokenKind,
         line: usize,
-        col: usize,
+        column: usize,
     },
-    #[error("Unexpected EOF")]
+    #[error("{source} at {line}:{column}")]
+    Ast {
+        #[source]
+        source: crate::ast::attribute::Error,
+        line: usize,
+        column: usize,
+    },
+    #[error("unexpected EOF")]
     Eof,
 }

@@ -5,7 +5,7 @@ use super::token::Token;
 pub struct Lexer<'a> {
     source: &'a str,
     line: usize,
-    col: usize,
+    column: usize,
     pos: usize,
 }
 
@@ -14,7 +14,7 @@ impl<'a> Lexer<'a> {
         Lexer {
             source,
             line: 1,
-            col: 1,
+            column: 1,
             pos: 0,
         }
     }
@@ -26,18 +26,20 @@ impl<'a> Lexer<'a> {
             tokens.push(token?);
         }
 
+        tokens.push(Token::new(TokenKind::Eof, self.line, self.column));
         Ok(tokens)
     }
 
     fn next_token(&mut self) -> Option<Result<Token, Error>> {
         self.skip_whitespace_and_comments();
 
-        let (line, col) = (self.line, self.col);
+        let (line, col) = (self.line, self.column);
 
         let kind = {
             let c = self.peek()?;
             match c {
                 c if c.is_alphabetic() => self.read_ident_or_keyword(),
+                c if c.is_ascii_digit() => self.read_number().ok()?,
                 '{' => {
                     self.advance();
                     TokenKind::LBrace
@@ -50,8 +52,32 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     TokenKind::Comma
                 }
+                '@' => {
+                    self.advance();
+                    TokenKind::At
+                }
+                '(' => {
+                    self.advance();
+                    TokenKind::LParen
+                }
+                ')' => {
+                    self.advance();
+                    TokenKind::RParen
+                }
+                '=' => {
+                    self.advance();
+                    TokenKind::Eq
+                }
+                '"' => {
+                    self.advance();
+                    self.read_string()
+                }
                 _ => {
-                    unreachable!();
+                    return Some(Err(Error::UnknownCharacter {
+                        character: c,
+                        line,
+                        column: col,
+                    }));
                 }
             }
         };
@@ -71,8 +97,38 @@ impl<'a> Lexer<'a> {
         match text {
             "type" => TokenKind::TypeDecl,
             "enum" => TokenKind::EnumDecl,
-            _ => TokenKind::Ident(text.to_string()),
+            _ => TokenKind::Ident(text.to_owned()),
         }
+    }
+
+    fn read_string(&mut self) -> TokenKind {
+        let start = self.pos;
+
+        while matches!(self.peek(), Some(c) if c != '"') {
+            self.advance();
+        }
+
+        let text = &self.source[start..self.pos];
+
+        self.advance(); // skip last '"'
+        TokenKind::String(text.to_owned())
+    }
+
+    fn read_number(&mut self) -> Result<TokenKind, Error> {
+        let start = self.pos;
+
+        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+            self.advance();
+        }
+
+        let text = &self.source[start..self.pos];
+
+        let number = text.parse::<u32>();
+
+        Ok(match number {
+            Ok(number) => TokenKind::Number(number),
+            Err(_) => return Err(Error::InvalidNumber(text.to_owned())),
+        })
     }
 
     fn advance(&mut self) -> Option<char> {
@@ -81,9 +137,9 @@ impl<'a> Lexer<'a> {
 
         if c == '\n' {
             self.line += 1;
-            self.col = 1
+            self.column = 1
         } else {
-            self.col += 1;
+            self.column += 1;
         }
 
         Some(c)
@@ -100,7 +156,7 @@ impl<'a> Lexer<'a> {
                     self.advance();
                 }
                 Some('#') => {
-                    while self.peek() != Some('\n') {
+                    while matches!(self.peek(), Some(c) if c != '\n') {
                         self.advance();
                     }
                 }
@@ -113,55 +169,66 @@ impl<'a> Lexer<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    static SOURCE: &str = "
-        type User {
-            name string,
-            age u8,
-            lifeState HumanLifeState
-        }
+    use crate::lexing::TokenKindTag;
 
-        # this is comment.
-
-        enum HumanLifeState {
-            Alive,
-            Dead
+    fn tags_is_matched(tokens: &[Token], expected: &[TokenKindTag]) {
+        for tag in tokens.iter().map(|t| t.kind().tag()) {
+            assert!(expected.contains(&tag));
         }
-    ";
+    }
 
     #[test]
-    fn test_type_and_enum_decl() {
-        let mut lexer = Lexer::new(SOURCE);
-        let tokens = lexer
-            .get_tokens()
-            .unwrap()
-            .iter()
-            .clone()
-            .map(|t| t.kind().clone())
-            .collect::<Vec<_>>();
+    fn test_basic_syntax() {
+        use TokenKindTag::*;
+        let source = "
+            type User { age u8 }
+        ";
 
-        assert_eq!(
-            tokens,
-            vec![
-                TokenKind::TypeDecl,
-                TokenKind::Ident("User".to_owned()),
-                TokenKind::LBrace,
-                TokenKind::Ident("name".to_owned()),
-                TokenKind::Ident("string".to_owned()),
-                TokenKind::Comma,
-                TokenKind::Ident("age".to_owned()),
-                TokenKind::Ident("u8".to_owned()),
-                TokenKind::Comma,
-                TokenKind::Ident("lifeState".to_owned()),
-                TokenKind::Ident("HumanLifeState".to_owned()),
-                TokenKind::RBrace,
-                TokenKind::EnumDecl,
-                TokenKind::Ident("HumanLifeState".to_owned()),
-                TokenKind::LBrace,
-                TokenKind::Ident("Alive".to_owned()),
-                TokenKind::Comma,
-                TokenKind::Ident("Dead".to_owned()),
-                TokenKind::RBrace
-            ]
+        let tokens = Lexer::new(source).get_tokens().unwrap();
+        assert_eq!(tokens.len(), 6 + 1 /* +1 for EOF */);
+
+        tags_is_matched(
+            &tokens,
+            &[TypeDecl, Ident, LBrace, Ident, Ident, RBrace, Eof],
+        );
+    }
+
+    #[test]
+    fn test_with_attributes() {
+        use TokenKindTag::*;
+        let source = "
+            @typescript(indent = 4)
+
+            type User @typescript(as = \"class\") { age u8 }
+        ";
+        let tokens = Lexer::new(source).get_tokens().unwrap();
+        assert_eq!(tokens.len(), 21);
+
+        tags_is_matched(
+            &tokens,
+            &[
+                At, Ident, LParen, Ident, Eq, Number, RParen, TypeDecl, Ident, At, Ident, LParen,
+                Ident, String, RParen, LBrace, Ident, Ident, RBrace, Eof,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_with_comments() {
+        use TokenKindTag::*;
+
+        let source = "
+            type User {
+                name string # name of user
+            }
+        ";
+
+        let tokens = Lexer::new(source).get_tokens().unwrap();
+        assert_eq!(tokens.len(), 7);
+
+        tags_is_matched(
+            &tokens,
+            &[TypeDecl, Ident, LBrace, Ident, Ident, RBrace, Eof],
         );
     }
 }

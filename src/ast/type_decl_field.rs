@@ -1,26 +1,27 @@
-use super::TypeDeclField;
+use crate::types::Type;
+
 use super::attribute::AttributeContainer;
 
 #[derive(Debug, PartialEq)]
-pub struct TypeDecl {
+pub struct TypeDeclField {
     name: String,
-    fields: Vec<TypeDeclField>,
+    ty: Type,
     attribute_container: AttributeContainer,
     line: usize,
     column: usize,
 }
 
-impl TypeDecl {
+impl TypeDeclField {
     pub fn new(
         name: String,
-        fields: Vec<TypeDeclField>,
+        ty: Type,
         container: AttributeContainer,
         line: usize,
         column: usize,
     ) -> Self {
         Self {
             name,
-            fields,
+            ty,
             attribute_container: container,
             line,
             column,
@@ -31,8 +32,8 @@ impl TypeDecl {
         &self.name
     }
 
-    pub fn fields(&self) -> &[TypeDeclField] {
-        self.fields.as_slice()
+    pub fn ty(&self) -> &Type {
+        &self.ty
     }
 
     pub fn attribute_container(&self) -> &AttributeContainer {
@@ -43,11 +44,11 @@ impl TypeDecl {
         &mut self.attribute_container
     }
 
-    pub fn line(&self)->usize {
+    pub fn line(&self) -> usize {
         self.line
     }
 
-    pub fn column(&self)->usize {
+    pub fn column(&self) -> usize {
         self.column
     }
 }
